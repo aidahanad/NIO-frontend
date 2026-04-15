@@ -54,7 +54,7 @@ export async function sendChat(
   const body = { conversation_id: conversationId, question, llm }
   if (docIds && docIds.length > 0) body.doc_ids = docIds
 
-  const res = await fetch(`${BASE_URL}/chat`, {
+  const res = await fetch(`${BASE_URL}/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

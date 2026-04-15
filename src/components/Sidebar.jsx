@@ -36,20 +36,20 @@ export default function Sidebar() {
       width: 260,
       minWidth: 260,
       height: '100vh',
-      backgroundColor: '#362E2B',
+      backgroundColor: '#362e2b',
       display: 'flex',
       flexDirection: 'column',
-      padding: '24px 16px',
+      padding: '8px 16px',
       boxShadow: '4px 0 20px rgba(0,0,0,0.25)',
       overflow: 'hidden',
     }}>
 
       <button
         onClick={goWelcome}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', marginBottom: 28, padding: 0 }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', marginBottom: 18, padding: 0 }}
       >
-        <div style={{ letterSpacing: '0.3em', fontSize: '1.3rem', fontWeight: 700, color: '#fff', textAlign: 'left' }}>NIO</div>
-        <div style={{ width: 32, height: 2, backgroundColor: '#E88B66', borderRadius: 2, marginTop: 5 }} />
+        <div style={{ letterSpacing: '0em', fontSize: '2.3rem', fontWeight: 700, color: '#fff', textAlign: 'left' }}>NIO</div>
+        <div style={{ width: 62, height: 2, backgroundColor: '#E88B66', borderRadius: 2, marginTop: 5 }} />
       </button>
 
       <p style={{ fontSize: 10, fontWeight: 600, color: '#A89E9A', letterSpacing: '0.12em', marginBottom: 10, textTransform: 'uppercase' }}>

@@ -34,19 +34,27 @@ textarea { resize: none; }
 }
 
 .animated-gradient {
-  background: linear-gradient(
-    135deg,
-    #0d1b2a,
-    #1a0a2e,
-    #3b0a0a,
-    #6b1a00,
-    #0a2a3b,
-    #003b2a,
-    #1a0a2e,
-    #0d1b2a
-  );
-  background-size: 400% 400%;
-  animation: gradientShift 12s ease infinite;
+  background: radial-gradient(circle at 20% 30%, #3f5e7a, transparent 40%),
+              radial-gradient(circle at 80% 20%, #5e4f73, transparent 45%),
+              radial-gradient(circle at 70% 80%, #8a5f5f, transparent 40%),
+              radial-gradient(circle at 30% 70%, #8c6e63, transparent 45%),
+              radial-gradient(circle at 50% 50%, #3e6674, transparent 50%),
+              linear-gradient(135deg, #3a566e, #4b3e68, #6e4c4c, #6f5a50);
+
+  background-size: 200% 200%;
+  animation: fluidMove 12s ease-in-out infinite alternate;
+}
+
+@keyframes fluidMove {
+  0% {
+    background-position: 0% 50%, 100% 50%, 50% 100%, 50% 0%, 50% 50%, 0% 50%;
+  }
+  50% {
+    background-position: 50% 0%, 50% 100%, 0% 50%, 100% 50%, 50% 50%, 50% 0%;
+  }
+  100% {
+    background-position: 100% 50%, 0% 50%, 50% 0%, 50% 100%, 50% 50%, 100% 50%;
+  }
 }
 
 @keyframes pulse-opacity {

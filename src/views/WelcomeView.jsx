@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { MessageSquare, FolderPlus } from 'lucide-react'
+import { MessageSquare, FolderPlus, LucideHeading2 } from 'lucide-react'
 import { store } from '../store/store.js'
 
 export default function WelcomeView() {
@@ -32,13 +32,20 @@ export default function WelcomeView() {
 
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <h1 style={{
-            fontSize: '3.2rem', fontWeight: 800, color: '#fff',
-            letterSpacing: '0.25em', lineHeight: 1,
-            textShadow: '0 2px 20px rgba(0,0,0,0.4)',
+            fontSize: '3.5rem', fontWeight: 600, color: '#ffffff',
+            letterSpacing: '0.1em', lineHeight: 1,
+            textShadow: '0 0 12px rgba(255, 255, 255, 0.3)',
           }}>NIO</h1>
+
+          <h2 style={{
+            fontSize: '2rem', fontWeight: 400, color: '#cecece',
+            letterSpacing: '0em', lineHeight: 1,
+            textShadow: '0 0 12px rgba(255, 255, 255, 0.2)',
+          }}>NAFTAL Intelegent Optimizor</h2>
+
           <div style={{
-            width: 48, height: 2.5, backgroundColor: '#E88B66',
-            borderRadius: 2, margin: '10px auto 0',
+            width: 100, height: 2.5, backgroundColor: '#E88B66',
+            borderRadius: 2, margin: '20px auto 0',
             boxShadow: '0 0 12px rgba(232,139,102,0.6)',
           }} />
         </div>
@@ -78,8 +85,8 @@ function WelcomeCard({ icon, title, onClick }) {
       whileHover={{ y: -4, boxShadow: '0 12px 32px rgba(0,0,0,0.35)' }}
       whileTap={{ scale: 0.97 }}
       style={{
-        width: 180, height: 160,
-        backgroundColor: 'rgba(68,58,54,0.55)',
+        width: 220, height: 120,
+        backgroundColor: 'rgba(114, 106, 103, 0.5)',
         backdropFilter: 'blur(12px)',
         borderRadius: 20,
         border: '1px solid rgba(255,255,255,0.1)',
