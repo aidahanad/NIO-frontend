@@ -6,11 +6,39 @@ export default function FileUploadZone({ label, file, onFile, onRemove }) {
   const inputRef = useRef(null)
   const [drag, setDrag] = useState(false)
 
-  const handleDrop = e => {
-    e.preventDefault(); setDrag(false)
-    const f = e.dataTransfer.files[0]
-    if (f?.type === 'application/pdf') onFile(f)
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDrag(false);
+
+    const f = e.dataTransfer.files[0];
+    if (!f) return;
+
+    const allowedTypes = [
+      "application/pdf",
+      "text/plain",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/json"
+    ];
+
+    const allowedExtensions = [".pdf", ".txt", ".docx", ".json"];
+
+    const isValidType = allowedTypes.includes(f.type);
+    const isValidExt = allowedExtensions.some(ext =>
+      f.name.toLowerCase().endsWith(ext)
+    );
+
+    if (isValidType || isValidExt) {
+      onFile(f);
+    } else {
+      console.warn("Unsupported file type:", f.type);
+    }
+  };
+const handleRemove = () => {
+  if (inputRef.current) {
+    inputRef.current.value = '';
   }
+  onRemove?.();
+};
 
   return (
     <div>
@@ -30,7 +58,7 @@ export default function FileUploadZone({ label, file, onFile, onRemove }) {
             }}>
             <FileText size={16} color="#E88B66" />
             <span style={{ flex: 1, fontSize: '0.82rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
-            <button onClick={onRemove} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 2 }}>
+            <button onClick={handleRemove} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 2 }}>
               <X size={14} color="#A89E9A" />
             </button>
           </motion.div>
@@ -54,7 +82,7 @@ export default function FileUploadZone({ label, file, onFile, onRemove }) {
               Glissez votre PDF ici{' '}
               <span style={{ color: '#E88B66' }}>ou parcourir</span>
             </span>
-            <input ref={inputRef} type="file" accept="application/pdf"
+            <input ref={inputRef} type="file" accept=".pdf,.txt,.docx,.json,application/pdf,text/plain,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               style={{ display: 'none' }}
               onChange={e => { if (e.target.files[0]) onFile(e.target.files[0]); e.target.value = '' }} />
           </motion.div>

@@ -55,10 +55,11 @@ export default function ProjectView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.id, hasInit])
 
-  async function initChat(proj, docIds, llmName) {
+  async function initAnalysis(proj, docIds, llmName) {
     setError(null)
 
-    // Add empty assistant placeholder
+    store.dispatch({ type: 'SET_ANALYSIS_STARTED', payload: proj.id })
+
     store.dispatch({
       type: 'ADD_PROJECT_MESSAGE',
       payload: {
@@ -66,43 +67,55 @@ export default function ProjectView() {
         message: { role: 'assistant', content: '' },
       },
     })
+
     setStreaming(true)
 
     try {
-      // Create conversation if not yet done
       let convId = proj.conversationId
+
       if (!convId) {
         const conv = await createConversation()
         convId = conv.conversation_id
+
         store.dispatch({
           type: 'SET_PROJECT_CONVERSATION_ID',
           payload: { projectId: proj.id, conversationId: convId },
         })
       }
 
-      const prompt =
-        `Présente-toi comme NIO, l'assistant IA de Naftal, et explique brièvement ` +
-        `ce que tu peux faire pour le projet "${proj.name}". ` +
-        (docIds.length ? `Tu as accès aux documents fournis (${docIds.length} fichier(s)).` : '')
+      // ✅ ONLY send what backend actually uses
+      const data = await runStudy(
+        convId,
+        proj.name,
+        docIds,
+        llmName
+      )
 
-      const data   = await sendChat(convId, prompt, docIds, llmName)
-      const answer = data?.answer ?? data?.response ?? data?.result ?? data?.output ?? JSON.stringify(data)
+      const answer =
+        data?.answer ??
+        data?.response ??
+        data?.result ??
+        data?.output ??
+        JSON.stringify(data)
 
       store.dispatch({
         type: 'UPDATE_LAST_PROJECT_AI',
-        payload: { projectId: proj.id, content: answer },
+        payload: {
+          projectId: proj.id,
+          content: answer,
+        },
       })
+
     } catch (err) {
       store.dispatch({
         type: 'UPDATE_LAST_PROJECT_AI',
         payload: {
           projectId: proj.id,
-          content:
-            `Bonjour ! Je suis **NIO**, votre assistant IA Naftal. ` +
-            `Je suis prêt à vous aider sur le projet **${proj.name}**. ` +
-            `Comment puis-je vous assister ?`,
+          content: `⚠️ Erreur lors de l'analyse : ${err.message}`,
         },
       })
+
+      setError(err.message)
     } finally {
       setStreaming(false)
     }

@@ -54,7 +54,7 @@ export async function sendChat(
   const body = { conversation_id: conversationId, question, llm }
   if (docIds && docIds.length > 0) body.doc_ids = docIds
 
-  const res = await fetch(`${BASE_URL}/ask`, {
+  const res = await fetch(`${BASE_URL}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -69,25 +69,26 @@ export async function sendChat(
 // ─── Study ─────────────────────────────────────────────────────────────────
 export async function runStudy(
   conversationId,
-  topic,
-  docIds = [],
-  llm = 'Qwen3-30B-A3B-Thinking'
+  topic
 ) {
-  const body = { conversation_id: conversationId, topic, llm }
-  if (docIds && docIds.length > 0) body.doc_ids = docIds
+  const body = {
+    conversation_id: conversationId,
+    topic,
+  };
 
   const res = await fetch(`${BASE_URL}/study`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || `Study error ${res.status}`)
-  }
-  return res.json() // { answer }
-}
+  });
 
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Study error ${res.status}`);
+  }
+
+  return res.json(); // { conversation_id, answer, json_path, mode }
+}
 // ─── Documents ─────────────────────────────────────────────────────────────
 export async function uploadDocument(file) {
   const form = new FormData()

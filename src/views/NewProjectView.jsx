@@ -9,16 +9,16 @@ import FileUploadZone from '../components/FileUploadZone.jsx'
 import SegmentedControl from '../components/SegmentedControl.jsx'
 
 export default function NewProjectView() {
-  const [name, setName]           = useState('')
-  const [lawFile, setLawFile]     = useState(null)
-  const [sitFile, setSitFile]     = useState(null)
+  const [name, setName] = useState('')
+  const [lawFile, setLawFile] = useState(null)
+  const [sitFile, setSitFile] = useState(null)
   const [includeNio, setIncludeNio] = useState(true)
-  const [model, setModel]         = useState('01')
-  const [mode, setMode]           = useState('chat')
+  const [model, setModel] = useState('01')
+  const [mode, setMode] = useState('chat')
   const [nameFocused, setNameFocused] = useState(false)
-  const [creating, setCreating]   = useState(false)
+  const [creating, setCreating] = useState(false)
   const [uploadStep, setUploadStep] = useState(null) // 'law' | 'sit' | 'done' | null
-  const [error, setError]         = useState(null)
+  const [error, setError] = useState(null)
 
   const canCreate = name.trim() && !creating
 
@@ -35,14 +35,14 @@ export default function NewProjectView() {
       if (lawFile) {
         setUploadStep('law')
         const res = await uploadDocument(lawFile)
-        lawDocId  = res.doc_id ?? res.id ?? null
+        lawDocId = res.doc_id ?? res.id ?? null
       }
 
       // Upload situation file if provided
       if (sitFile) {
         setUploadStep('sit')
         const res = await uploadDocument(sitFile)
-        sitDocId  = res.doc_id ?? res.id ?? null
+        sitDocId = res.doc_id ?? res.id ?? null
       }
 
       setUploadStep('done')
@@ -57,7 +57,7 @@ export default function NewProjectView() {
           sitFile,
           lawDocId,
           sitDocId,
-          includeNio,
+          includeNio: !!includeNio,
         },
       })
     } catch (err) {
@@ -120,10 +120,17 @@ export default function NewProjectView() {
 
           {/* Project name */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <label style={{ color: '#A89E9A', fontSize: '0.8rem', fontWeight: 600,
-                            display: 'block', marginBottom: 8, letterSpacing: '0.05em' }}>
+            <label style={{
+              color: '#A89E9A',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              display: 'block',
+              marginBottom: 8,
+              letterSpacing: '0.05em'
+            }}>
               NOM DU PROJET *
             </label>
+
             <input
               value={name}
               onChange={e => setName(e.target.value)}
@@ -135,25 +142,31 @@ export default function NewProjectView() {
             />
           </motion.div>
 
-          {/* PDF uploads */}
+          {/* File uploads */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <label style={{ color: '#A89E9A', fontSize: '0.8rem', fontWeight: 600,
-                            display: 'block', marginBottom: 8, letterSpacing: '0.05em' }}>
+            <label style={{
+              color: '#A89E9A',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              display: 'block',
+              marginBottom: 8,
+              letterSpacing: '0.05em'
+            }}>
               DOCUMENTS
             </label>
+
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 220, opacity: creating ? 0.6 : 1,
-                            pointerEvents: creating ? 'none' : 'auto' }}>
+              <div style={{ flex: 1, minWidth: 220, opacity: creating ? 0.6 : 1, pointerEvents: creating ? 'none' : 'auto' }}>
                 <FileUploadZone
                   label="Loi / Texte réglementaire"
                   file={lawFile}
                   onFile={setLawFile}
                   uploading={uploadStep === 'law'}
-                  done={!!lawFile && uploadStep === 'done'}
+                  done={!!lawFile && uploadStep !== 'law' && uploadStep !== 'sit'}
                 />
               </div>
-              <div style={{ flex: 1, minWidth: 220, opacity: creating ? 0.6 : 1,
-                            pointerEvents: creating ? 'none' : 'auto' }}>
+
+              <div style={{ flex: 1, minWidth: 220, opacity: creating ? 0.6 : 1, pointerEvents: creating ? 'none' : 'auto' }}>
                 <FileUploadZone
                   label="Situation / Cas concret"
                   file={sitFile}
@@ -165,36 +178,56 @@ export default function NewProjectView() {
             </div>
           </motion.div>
 
-          {/* Include NIO knowledge */}
+          {/* Include NIO */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <button
               onClick={() => !creating && setIncludeNio(n => !n)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                backgroundColor: 'transparent', border: 'none', cursor: creating ? 'not-allowed' : 'pointer',
-                padding: 0, opacity: creating ? 0.6 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: creating ? 'not-allowed' : 'pointer',
+                padding: 0,
+                opacity: creating ? 0.6 : 1,
               }}
             >
               <div style={{
-                width: 20, height: 20, borderRadius: 6,
+                width: 20,
+                height: 20,
+                borderRadius: 6,
                 backgroundColor: includeNio ? '#E88B66' : '#443A36',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}>
-                {includeNio && <span style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 700 }}>✓</span>}
+                {includeNio && (
+                  <span style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 700 }}>
+                    ✓
+                  </span>
+                )}
               </div>
+
               <span style={{ color: '#fff', fontSize: '0.85rem' }}>
                 Inclure la base de connaissances NIO
               </span>
             </button>
           </motion.div>
 
-          {/* Model selector */}
+          {/* Model */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-            <label style={{ color: '#A89E9A', fontSize: '0.8rem', fontWeight: 600,
-                            display: 'block', marginBottom: 8, letterSpacing: '0.05em' }}>
+            <label style={{
+              color: '#A89E9A',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              display: 'block',
+              marginBottom: 8,
+              letterSpacing: '0.05em'
+            }}>
               MODÈLE IA
             </label>
+
             <SegmentedControl
               options={['01', '02', '03']}
               value={model}
@@ -202,12 +235,19 @@ export default function NewProjectView() {
             />
           </motion.div>
 
-          {/* Mode cards */}
+          {/* Mode */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <label style={{ color: '#A89E9A', fontSize: '0.8rem', fontWeight: 600,
-                            display: 'block', marginBottom: 8, letterSpacing: '0.05em' }}>
+            <label style={{
+              color: '#A89E9A',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              display: 'block',
+              marginBottom: 8,
+              letterSpacing: '0.05em'
+            }}>
               MODE
             </label>
+
             <div style={{ display: 'flex', gap: 12 }}>
               <ModeCard
                 icon={<MessageSquare size={20} color="#E88B66" />}
@@ -216,10 +256,11 @@ export default function NewProjectView() {
                 active={mode === 'chat'}
                 onClick={() => !creating && setMode('chat')}
               />
+
               <ModeCard
                 icon={<Search size={20} color="#E88B66" />}
                 title="Analyse"
-                subtitle="Analyse automatique approfondie"
+                subtitle="Génération de rapport + étude des documents"
                 active={mode === 'analyse'}
                 onClick={() => !creating && setMode('analyse')}
               />
@@ -228,42 +269,38 @@ export default function NewProjectView() {
 
           {/* Error */}
           {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{
-                backgroundColor: 'rgba(220,38,38,0.12)',
-                border: '1px solid rgba(220,38,38,0.25)',
-                borderRadius: 10, padding: '10px 16px',
-                color: '#fca5a5', fontSize: '0.82rem',
-              }}
-            >
+            <div style={{
+              backgroundColor: 'rgba(220,38,38,0.12)',
+              border: '1px solid rgba(220,38,38,0.25)',
+              borderRadius: 10,
+              padding: '10px 16px',
+              color: '#fca5a5',
+              fontSize: '0.82rem',
+            }}>
               ⚠️ {error}
-            </motion.div>
+            </div>
           )}
 
-          {/* Create button */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-            <motion.button
-              onClick={handleCreate}
-              disabled={!canCreate}
-              whileHover={canCreate ? { scale: 1.02, backgroundColor: '#F09A78' } : {}}
-              whileTap={canCreate ? { scale: 0.97 } : {}}
-              style={{
-                width: '100%', padding: '14px', borderRadius: 14,
-                backgroundColor: canCreate ? '#E88B66' : '#443A36',
-                border: 'none', cursor: canCreate ? 'pointer' : 'not-allowed',
-                color: canCreate ? '#fff' : '#A89E9A',
-                fontSize: '0.9rem', fontWeight: 700,
-                boxShadow: canCreate ? '0 4px 16px rgba(232,139,102,0.3)' : 'none',
-                transition: 'background-color 0.2s, box-shadow 0.2s',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              }}
-            >
-              {creating && <Spinner size={16} />}
-              {buttonLabel()}
-            </motion.button>
-          </motion.div>
+          {/* Button */}
+          <motion.button
+            onClick={handleCreate}
+            disabled={!canCreate}
+            whileHover={canCreate ? { scale: 1.02 } : {}}
+            whileTap={canCreate ? { scale: 0.97 } : {}}
+            style={{
+              width: '100%',
+              padding: '14px',
+              borderRadius: 14,
+              backgroundColor: canCreate ? '#E88B66' : '#443A36',
+              border: 'none',
+              cursor: canCreate ? 'pointer' : 'not-allowed',
+              color: canCreate ? '#fff' : '#A89E9A',
+              fontSize: '0.9rem',
+              fontWeight: 700,
+            }}
+          >
+            {buttonLabel()}
+          </motion.button>
 
         </div>
       </motion.div>
@@ -278,17 +315,18 @@ function ModeCard({ icon, title, subtitle, active, onClick }) {
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.97 }}
       style={{
-        flex: 1, padding: '16px', borderRadius: 14,
+        flex: 1,
+        padding: '16px',
+        borderRadius: 14,
         backgroundColor: '#443A36',
-        outline: active ? '2px solid #E88B66' : '2px solid transparent',
-        boxShadow: active ? '0 0 16px rgba(232,139,102,0.18)' : '0 2px 8px rgba(0,0,0,0.12)',
-        cursor: 'pointer', border: 'none', textAlign: 'left',
-        transition: 'outline 0.2s, box-shadow 0.2s',
+        border: active ? '2px solid #E88B66' : '2px solid transparent',
+        cursor: 'pointer',
+        textAlign: 'left',
       }}
     >
       <div style={{ marginBottom: 8 }}>{icon}</div>
-      <p style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 4px' }}>{title}</p>
-      <p style={{ color: '#A89E9A', fontSize: '0.75rem', margin: 0 }}>{subtitle}</p>
+      <p style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 600 }}>{title}</p>
+      <p style={{ color: '#A89E9A', fontSize: '0.75rem' }}>{subtitle}</p>
     </motion.button>
   )
 }
