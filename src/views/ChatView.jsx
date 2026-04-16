@@ -21,7 +21,6 @@ function modelToLLM(nioModel) {
 
 const SUGGESTIONS = [
   'Can a contract with NAFTAL be awarded without an open tender if only one supplier exists in the market?',
-  'What happens if a company submits a technically strong offer but accidentally includes pricing details in the technical proposal?',
   'Is it legal to split a large project into smaller contracts to stay below the 50 million DA threshold?',
 ]
 
