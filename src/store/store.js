@@ -1,5 +1,3 @@
-// src/store/store.js
-
 let state = {
   projects: [],
   activeProjectId: null,
@@ -42,8 +40,9 @@ function reducer(state, action) {
         activeProjectId: null,
         activeChatSession: {
           id: `chat_${Date.now()}`,
+          title: 'Nouvelle discussion',
           model: '01',
-          conversationId: null, // set after backend creates it
+          conversationId: null,
           messages: [],
         },
       }
@@ -53,6 +52,16 @@ function reducer(state, action) {
       return {
         ...state,
         activeChatSession: { ...state.activeChatSession, model: action.payload },
+      }
+
+    case 'RENAME_CHAT':
+      if (!state.activeChatSession) return state
+      return {
+        ...state,
+        activeChatSession: {
+          ...state.activeChatSession,
+          title: action.payload,
+        },
       }
 
     case 'SET_CHAT_CONVERSATION_ID':
@@ -121,6 +130,15 @@ function reducer(state, action) {
         activeView: 'project',
         activeChatSession: null,
       }
+
+    case 'RENAME_PROJECT': {
+      const projects = state.projects.map(p =>
+        p.id === action.payload.id
+          ? { ...p, name: action.payload.name }
+          : p
+      )
+      return { ...state, projects }
+    }
 
     case 'SET_PROJECT_CONVERSATION_ID': {
       const projects = state.projects.map(p =>

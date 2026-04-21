@@ -10,12 +10,12 @@ export default function App() {
   const { activeView } = useSyncExternalStore(store.subscribe, store.getSnapshot)
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: '#2C2522' }}>
+    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: '#F5F2F0' }}>
       <AnimatePresence mode="wait">
-        {activeView === 'welcome' && <WelcomeView key="welcome" />}
-        {activeView === 'chat' && <ChatView key="chat" />}
-        {activeView === 'new-project' && <NewProjectView key="new-project" />}
-        {activeView === 'project' && <ProjectView key="project" />}
+        {activeView === 'welcome'     && <WelcomeView    key="welcome"     />}
+        {activeView === 'chat'        && <ChatView        key="chat"        />}
+        {activeView === 'new-project' && <NewProjectView  key="new-project" />}
+        {activeView === 'project'     && <ProjectView     key="project"     />}
       </AnimatePresence>
     </div>
   )
