@@ -19,7 +19,7 @@ const SUGGESTIONS = [
 ]
 
 export default function ChatView() {
-  const state   = useSyncExternalStore(store.subscribe, store.getSnapshot)
+  const state    = useSyncExternalStore(store.subscribe, store.getSnapshot)
   const session  = state.activeChatSession
   const messages = session?.messages ?? []
 
@@ -31,7 +31,7 @@ export default function ChatView() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  async function sendMessage(text) {
+  async function sendMessage(text, docIds = []) {
     if (!text.trim() || streaming) return
     setError(null)
 
@@ -53,7 +53,7 @@ export default function ChatView() {
 
     try {
       const llm  = resolveModel(session?.model)
-      const data = await sendChat(convId, text, [], llm)
+      const data = await sendChat(convId, text, docIds, llm)
       const answer = data?.answer || data?.response || data?.result || data?.output || JSON.stringify(data)
       store.dispatch({ type: 'UPDATE_LAST_CHAT_AI', payload: answer })
     } catch (err) {
@@ -123,7 +123,7 @@ export default function ChatView() {
         <div style={{
           flex: 1, overflowY: 'auto',
           display: 'flex', flexDirection: 'column',
-          backgroundColor: messages.length === 0 ? '#F5F2F0' : '#F5F2F0',
+          backgroundColor: '#F5F2F0',
           padding: messages.length === 0 ? '0' : '24px',
         }}>
           {messages.length === 0 ? (
@@ -138,11 +138,8 @@ export default function ChatView() {
                 gap: 20, textAlign: 'center', padding: '40px 24px',
               }}
             >
-              {/* Soft blob */}
               <div style={{
-                position: 'absolute',
-                width: 400, height: 400,
-                borderRadius: '50%',
+                position: 'absolute', width: 400, height: 400, borderRadius: '50%',
                 background: 'radial-gradient(circle, rgba(232,139,102,0.1) 0%, transparent 70%)',
                 pointerEvents: 'none',
               }} />
@@ -170,7 +167,7 @@ export default function ChatView() {
                 {SUGGESTIONS.map((s, i) => (
                   <motion.button
                     key={i}
-                    onClick={() => !streaming && sendMessage(s)}
+                    onClick={() => !streaming && sendMessage(s, [])}
                     whileHover={{ scale: 1.03, backgroundColor: '#FFF3EE', borderColor: '#E88B66' }}
                     whileTap={{ scale: 0.97 }}
                     style={{
