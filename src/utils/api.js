@@ -1,4 +1,3 @@
-// src/utils/api.js
 const BASE_URL = 'http://localhost:8000'
 
 // ─── Health ────────────────────────────────────────────────────────────────
@@ -23,7 +22,7 @@ export async function createConversation() {
     body: JSON.stringify({}),
   })
   if (!res.ok) throw new Error('Could not create conversation')
-  return res.json() // { conversation_id, title }
+  return res.json()
 }
 
 export async function listConversations() {
@@ -39,66 +38,80 @@ export async function getConversation(id) {
 }
 
 export async function deleteConversation(id) {
-  const res = await fetch(`${BASE_URL}/conversations/${id}`, { method: 'DELETE' })
+  const res = await fetch(`${BASE_URL}/conversations/${id}`, {
+    method: 'DELETE',
+  })
   if (!res.ok) throw new Error('Could not delete conversation')
   return res.json()
 }
 
-// ─── Chat ──────────────────────────────────────────────────────────────────
+// ─── CHAT (🔥 FIXED: model is ALWAYS explicit now) ─────────────────────────
 export async function sendChat(
   conversationId,
   question,
   docIds = [],
-  llm = 'Qwen3-30B-A3B-Thinking'
+  llm
 ) {
-  const body = { conversation_id: conversationId, question, llm }
-  if (docIds && docIds.length > 0) body.doc_ids = docIds
+  const body = {
+    conversation_id: conversationId,
+    question,
+    llm, // 🔥 ALWAYS sent explicitly
+  }
+
+  // only include docs if needed
+  if (Array.isArray(docIds) && docIds.length > 0) {
+    body.doc_ids = docIds
+  }
 
   const res = await fetch(`${BASE_URL}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err.detail || `Chat error ${res.status}`)
   }
-  return res.json() // { answer, sources? }
+
+  return res.json()
 }
 
-// ─── Study ─────────────────────────────────────────────────────────────────
-export async function runStudy(
-  conversationId,
-  topic
-) {
-  const body = {
-    conversation_id: conversationId,
-    topic,
-  };
-
+// ─── STUDY ─────────────────────────────────────────────────────────────────
+export async function runStudy(conversationId, topic) {
   const res = await fetch(`${BASE_URL}/study`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+    body: JSON.stringify({
+      conversation_id: conversationId,
+      topic,
+    }),
+  })
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Study error ${res.status}`);
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || `Study error ${res.status}`)
   }
 
-  return res.json(); // { conversation_id, answer, json_path, mode }
+  return res.json()
 }
-// ─── Documents ─────────────────────────────────────────────────────────────
+
+// ─── DOCUMENTS ─────────────────────────────────────────────────────────────
 export async function uploadDocument(file) {
   const form = new FormData()
   form.append('file', file)
-  const res = await fetch(`${BASE_URL}/upload`, { method: 'POST', body: form })
+
+  const res = await fetch(`${BASE_URL}/upload`, {
+    method: 'POST',
+    body: form,
+  })
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err.detail || `Upload error ${res.status}`)
   }
-  return res.json() // { doc_id, chunks, message }
+
+  return res.json()
 }
 
 export async function listDocuments() {
@@ -108,7 +121,10 @@ export async function listDocuments() {
 }
 
 export async function deleteDocument(docId) {
-  const res = await fetch(`${BASE_URL}/documents/${docId}`, { method: 'DELETE' })
+  const res = await fetch(`${BASE_URL}/documents/${docId}`, {
+    method: 'DELETE',
+  })
+
   if (!res.ok) throw new Error('Could not delete document')
   return res.json()
 }

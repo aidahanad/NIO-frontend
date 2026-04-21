@@ -41,7 +41,7 @@ export default function WelcomeView() {
             fontSize: '2rem', fontWeight: 400, color: '#cecece',
             letterSpacing: '0em', lineHeight: 1,
             textShadow: '0 0 12px rgba(255, 255, 255, 0.2)',
-          }}>NAFTAL Intelegent Optimizor</h2>
+          }}>NAFTAL Intelligent Optimizor</h2>
 
           <div style={{
             width: 100, height: 2.5, backgroundColor: '#E88B66',
