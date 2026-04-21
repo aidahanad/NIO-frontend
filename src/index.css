@@ -10,41 +10,33 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 html, body, #root {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  color: #fff;
 }
 
-textarea { resize: none; }
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #443A36; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #5a4e49; }
-
-@keyframes gradientShift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
+/* 🌊 FLUID BACKGROUND */
 .animated-gradient {
   background: radial-gradient(circle at 20% 30%, #3f5e7a, transparent 40%),
               radial-gradient(circle at 80% 20%, #5e4f73, transparent 45%),
               radial-gradient(circle at 70% 80%, #8a5f5f, transparent 40%),
               radial-gradient(circle at 30% 70%, #8c6e63, transparent 45%),
               radial-gradient(circle at 50% 50%, #3e6674, transparent 50%),
-              linear-gradient(135deg, #3a566e, #4b3e68, #6e4c4c, #6f5a50);
+              linear-gradient(135deg, #2a3b4f, #3b2f55, #5a3a3a, #5a463f);
 
   background-size: 200% 200%;
-  animation: fluidMove 12s ease-in-out infinite alternate;
+  animation: fluidMove 14s ease-in-out infinite alternate;
 }
 
+/* 🌊 motion drift */
 @keyframes fluidMove {
   0% {
     background-position: 0% 50%, 100% 50%, 50% 100%, 50% 0%, 50% 50%, 0% 50%;
@@ -57,9 +49,32 @@ textarea { resize: none; }
   }
 }
 
-@keyframes pulse-opacity {
-  0%, 100% { opacity: 0.5; }
-  50%       { opacity: 1; }
+@keyframes neoShine {
+  0% {
+    background-position: 0% 50%;
+    filter: brightness(1.1);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: brightness(1.5);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: brightness(1.1);
+  }
 }
 
-.pulse-text { animation: pulse-opacity 1.6s ease-in-out infinite; }
+/* scrollbar polish */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.25);
+}
