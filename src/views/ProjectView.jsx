@@ -9,54 +9,81 @@ import ChatInput from '../components/ChatInput.jsx'
 import MarkdownRenderer from '../components/MarkdownRenderer.jsx'
 import Spinner from '../components/Spinner.jsx'
 
-function modelToLLM(nioModel) {
+function modelToLLM(model) {
   const map = {
     '01': 'Qwen3-30B-A3B-Thinking',
-    '02': 'GPT_OSS_120B',
+    '02': 'gpt-oss-120b',
     '03': 'Qwen3-30B-A3B-Thinking',
   }
-  return map[nioModel] ?? 'Qwen3-30B-A3B-Thinking'
+
+  if (!model) return 'Qwen3-30B-A3B-Thinking'
+  return map[model] || String(model).trim()
 }
 
 export default function ProjectView() {
-  const state   = useSyncExternalStore(store.subscribe, store.getSnapshot)
+  const state = useSyncExternalStore(store.subscribe, store.getSnapshot)
   const project = state.projects.find(p => p.id === state.activeProjectId)
 
   const [streaming, setStreaming] = useState(false)
-  const [error, setError]         = useState(null)
-  const [hasInit, setHasInit]     = useState(false)
+  const [error, setError] = useState(null)
+  const [hasInit, setHasInit] = useState(false)
   const bottomRef = useRef(null)
 
-  // Reset init flag when project changes
   useEffect(() => {
     setHasInit(false)
     setError(null)
   }, [state.activeProjectId])
 
-  // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [project?.messages])
 
-  // ── Initialisation (greeting or analysis) ────────────────────────────────
   useEffect(() => {
     if (!project || hasInit) return
     setHasInit(true)
 
-    const docIds  = [project.lawDocId, project.sitDocId].filter(Boolean)
     const llmName = modelToLLM(project.model)
 
     if (project.mode === 'chat' && project.messages.length === 0) {
-      initChat(project, docIds, llmName)
+      initChat(project)
     }
+
     if (project.mode === 'analyse' && !project.analysisStarted) {
-      initAnalysis(project, docIds, llmName)
+      initAnalysis(project, llmName)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.id, hasInit])
 
-  async function initAnalysis(proj, docIds, llmName) {
+  async function initChat(proj) {
+    store.dispatch({
+      type: 'ADD_PROJECT_MESSAGE',
+      payload: {
+        projectId: proj.id,
+        message: {
+          role: 'assistant',
+          content: 'Bonjour, vous pouvez poser vos questions sur ce projet.',
+        },
+      },
+    })
+  }
+
+  async function initAnalysis(proj, llmName) {
     setError(null)
+
+    if (!proj.sitDocId) {
+      const msg = 'Aucun document à analyser. Vérifiez que le fichier a bien été uploadé.'
+      setError(msg)
+
+      store.dispatch({
+        type: 'ADD_PROJECT_MESSAGE',
+        payload: {
+          projectId: proj.id,
+          message: { role: 'assistant', content: `⚠️ ${msg}` },
+        },
+      })
+
+      return
+    }
 
     store.dispatch({ type: 'SET_ANALYSIS_STARTED', payload: proj.id })
 
@@ -71,23 +98,9 @@ export default function ProjectView() {
     setStreaming(true)
 
     try {
-      let convId = proj.conversationId
-
-      if (!convId) {
-        const conv = await createConversation()
-        convId = conv.conversation_id
-
-        store.dispatch({
-          type: 'SET_PROJECT_CONVERSATION_ID',
-          payload: { projectId: proj.id, conversationId: convId },
-        })
-      }
-
-      // ✅ ONLY send what backend actually uses
       const data = await runStudy(
-        convId,
-        proj.name,
-        docIds,
+        proj.sitDocId,
+        'Est-ce que ce marché est conforme à la procédure NAFTAL ?',
         llmName
       )
 
@@ -96,7 +109,7 @@ export default function ProjectView() {
         data?.response ??
         data?.result ??
         data?.output ??
-        JSON.stringify(data)
+        JSON.stringify(data, null, 2)
 
       store.dispatch({
         type: 'UPDATE_LAST_PROJECT_AI',
@@ -105,53 +118,6 @@ export default function ProjectView() {
           content: answer,
         },
       })
-
-    } catch (err) {
-      store.dispatch({
-        type: 'UPDATE_LAST_PROJECT_AI',
-        payload: {
-          projectId: proj.id,
-          content: `⚠️ Erreur lors de l'analyse : ${err.message}`,
-        },
-      })
-
-      setError(err.message)
-    } finally {
-      setStreaming(false)
-    }
-  }
-
-  async function initAnalysis(proj, docIds, llmName) {
-    setError(null)
-    store.dispatch({ type: 'SET_ANALYSIS_STARTED', payload: proj.id })
-
-    store.dispatch({
-      type: 'ADD_PROJECT_MESSAGE',
-      payload: {
-        projectId: proj.id,
-        message: { role: 'assistant', content: '' },
-      },
-    })
-    setStreaming(true)
-
-    try {
-      let convId = proj.conversationId
-      if (!convId) {
-        const conv = await createConversation()
-        convId = conv.conversation_id
-        store.dispatch({
-          type: 'SET_PROJECT_CONVERSATION_ID',
-          payload: { projectId: proj.id, conversationId: convId },
-        })
-      }
-
-      const data   = await runStudy(convId, proj.name, docIds, llmName)
-      const answer = data?.answer ?? data?.response ?? data?.result ?? data?.output ?? JSON.stringify(data)
-
-      store.dispatch({
-        type: 'UPDATE_LAST_PROJECT_AI',
-        payload: { projectId: proj.id, content: answer },
-      })
     } catch (err) {
       store.dispatch({
         type: 'UPDATE_LAST_PROJECT_AI',
@@ -166,43 +132,46 @@ export default function ProjectView() {
     }
   }
 
-  // ── Send user message ────────────────────────────────────────────────────
   async function sendMessage(text) {
     if (!project || !text.trim() || streaming || project.mode === 'analyse') return
     setError(null)
 
-    const docIds  = [project.lawDocId, project.sitDocId].filter(Boolean)
+    const docIds = [project.lawDocId, project.sitDocId].filter(Boolean)
     const llmName = modelToLLM(project.model)
 
-    // Ensure conversation exists
     let convId = project.conversationId
+
     if (!convId) {
-      try {
-        const conv = await createConversation()
-        convId = conv.conversation_id
-        store.dispatch({
-          type: 'SET_PROJECT_CONVERSATION_ID',
-          payload: { projectId: project.id, conversationId: convId },
-        })
-      } catch {
-        setError('Impossible de créer la conversation.')
-        return
-      }
+      const conv = await createConversation()
+      convId = conv.conversation_id
+
+      store.dispatch({
+        type: 'SET_PROJECT_CONVERSATION_ID',
+        payload: { projectId: project.id, conversationId: convId },
+      })
     }
 
     store.dispatch({
       type: 'ADD_PROJECT_MESSAGE',
       payload: { projectId: project.id, message: { role: 'user', content: text } },
     })
+
     store.dispatch({
       type: 'ADD_PROJECT_MESSAGE',
       payload: { projectId: project.id, message: { role: 'assistant', content: '' } },
     })
+
     setStreaming(true)
 
     try {
-      const data   = await sendChat(convId, text, docIds, llmName)
-      const answer = data?.answer ?? data?.response ?? data?.result ?? data?.output ?? JSON.stringify(data)
+      const data = await sendChat(convId, text, docIds, llmName)
+      const answer =
+        data?.answer ??
+        data?.response ??
+        data?.result ??
+        data?.output ??
+        JSON.stringify(data, null, 2)
+
       store.dispatch({
         type: 'UPDATE_LAST_PROJECT_AI',
         payload: { projectId: project.id, content: answer },
@@ -220,65 +189,41 @@ export default function ProjectView() {
 
   if (!project) return null
 
-  const isAnalyse  = project.mode === 'analyse'
-  const docIds     = [project.lawDocId, project.sitDocId].filter(Boolean)
-  const fileChips  = [
+  const isAnalyse = project.mode === 'analyse'
+  const fileChips = [
     project.lawFile && { label: project.lawFile.name ?? 'Loi / Texte réglementaire' },
-    project.sitFile && { label: project.sitFile.name ?? 'Situation' },
+    project.sitFile && { label: project.sitFile.name ?? 'Document à analyser' },
   ].filter(Boolean)
 
   return (
-    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#2C2522', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#F5F2F0', overflow: 'hidden' }}>
       <Sidebar />
 
       <motion.div
         key={`project-${project.id}`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.25 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
         style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
       >
-        {/* ── Header ── */}
         <div style={{
-          padding: '14px 24px', backgroundColor: '#2C2522',
-          boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
+          padding: '24px 32px 18px',
+          backgroundColor: '#F5F2F0',
+          borderBottom: '1px solid #E8E2DE',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem', margin: 0 }}>
+            <h1 style={{ color: '#1A1614', fontWeight: 800, fontSize: '1.5rem', margin: 0 }}>
               {project.name}
-            </p>
+            </h1>
 
-            {/* Mode badge */}
-            <span style={{
-              backgroundColor: isAnalyse ? 'rgba(232,139,102,0.15)' : 'rgba(68,58,54,0.8)',
-              color: isAnalyse ? '#E88B66' : '#A89E9A',
-              fontSize: '0.7rem', fontWeight: 600, padding: '3px 9px', borderRadius: 20,
-            }}>
-              {isAnalyse ? 'Analyse' : 'Chat'}
-            </span>
+            <Badge active>{isAnalyse ? 'Analyse' : 'Chat'}</Badge>
+            <Badge>{project.model}</Badge>
 
-            {/* Model badge */}
-            <span style={{
-              backgroundColor: '#443A36', color: '#E88B66',
-              fontSize: '0.7rem', fontWeight: 600, padding: '3px 9px', borderRadius: 20,
-            }}>
-              Modèle {project.model}
-            </span>
-
-            {/* NIO badge */}
-            {project.includeNio && (
-              <span style={{
-                backgroundColor: 'rgba(232,139,102,0.1)', color: '#E88B66',
-                fontSize: '0.7rem', fontWeight: 700, padding: '3px 9px', borderRadius: 20,
-              }}>
-                NIO
-              </span>
-            )}
+            {project.includeNio && <Badge active>NIO</Badge>}
           </div>
 
-          {/* File chips */}
           {fileChips.length > 0 && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
               {fileChips.map((chip, i) => (
                 <FileChip key={i} label={chip.label} />
               ))}
@@ -286,7 +231,6 @@ export default function ProjectView() {
           )}
         </div>
 
-        {/* ── Error banner ── */}
         <AnimatePresence>
           {error && (
             <motion.div
@@ -294,29 +238,47 @@ export default function ProjectView() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               style={{
-                backgroundColor: 'rgba(220,38,38,0.12)',
-                borderBottom: '1px solid rgba(220,38,38,0.25)',
-                padding: '8px 24px', color: '#fca5a5',
-                fontSize: '0.8rem', display: 'flex',
-                justifyContent: 'space-between', alignItems: 'center',
+                backgroundColor: 'rgba(220,38,38,0.08)',
+                borderBottom: '1px solid rgba(220,38,38,0.18)',
+                padding: '10px 32px',
+                color: '#dc2626',
+                fontSize: '0.85rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
               }}
             >
               <span>⚠️ {error}</span>
-              <button onClick={() => setError(null)}
-                style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '1rem' }}>
+              <button
+                onClick={() => setError(null)}
+                style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '1rem' }}
+              >
                 ×
               </button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ── Messages ── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {isAnalyse && project.messages.length === 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center',
-                          justifyContent: 'center', flex: 1, gap: 16 }}>
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '28px 32px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          backgroundColor: '#F5F2F0',
+        }}>
+          {isAnalyse && project.messages.length === 0 && streaming && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flex: 1,
+              gap: 16,
+            }}>
               <Spinner size={32} />
-              <p style={{ color: '#A89E9A', fontSize: '0.9rem' }}>Analyse en cours…</p>
+              <p style={{ color: '#8A7D78', fontSize: '0.9rem' }}>Analyse en cours…</p>
             </div>
           )}
 
@@ -329,22 +291,24 @@ export default function ProjectView() {
               />
             ))}
           </AnimatePresence>
+
           <div ref={bottomRef} />
         </div>
 
-        {/* ── Input (chat mode only) ── */}
         {!isAnalyse && (
-          <div style={{ padding: '0 24px 20px' }}>
+          <div style={{ padding: '0 32px 24px', backgroundColor: '#F5F2F0' }}>
             <ChatInput onSend={sendMessage} disabled={streaming} />
           </div>
         )}
 
-        {/* ── Read-only footer for analyse mode ── */}
         {isAnalyse && project.analysisStarted && !streaming && (
           <div style={{
-            padding: '12px 24px', textAlign: 'center',
-            color: '#A89E9A', fontSize: '0.78rem',
-            borderTop: '1px solid rgba(255,255,255,0.04)',
+            padding: '12px 32px',
+            textAlign: 'center',
+            color: '#8A7D78',
+            fontSize: '0.78rem',
+            borderTop: '1px solid #E8E2DE',
+            backgroundColor: '#F5F2F0',
           }}>
             Analyse terminée — mode lecture seule
           </div>
@@ -354,21 +318,42 @@ export default function ProjectView() {
   )
 }
 
+function Badge({ children, active = false }) {
+  return (
+    <span style={{
+      backgroundColor: active ? '#FFF3EE' : '#FFFFFF',
+      color: active ? '#E88B66' : '#8A7D78',
+      border: active ? '1.5px solid rgba(232,139,102,0.35)' : '1.5px solid #E8E2DE',
+      fontSize: '0.74rem',
+      fontWeight: 700,
+      padding: '5px 11px',
+      borderRadius: 999,
+    }}>
+      {children}
+    </span>
+  )
+}
+
 function FileChip({ label }) {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 6,
-      backgroundColor: '#443A36', borderRadius: 20,
-      padding: '4px 12px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 7,
+      backgroundColor: '#FFFFFF',
+      border: '1.5px solid #E8E2DE',
+      borderRadius: 999,
+      padding: '6px 12px',
     }}>
-      <FileText size={12} color="#E88B66" />
-      <span style={{ color: '#A89E9A', fontSize: '0.75rem' }}>{label}</span>
+      <FileText size={13} color="#E88B66" />
+      <span style={{ color: '#8A7D78', fontSize: '0.78rem', fontWeight: 500 }}>{label}</span>
     </div>
   )
 }
 
 function ProjBubble({ msg, streaming }) {
   const isUser = msg.role === 'user'
+
   return (
     <motion.div
       layout
@@ -380,15 +365,17 @@ function ProjBubble({ msg, streaming }) {
     >
       <div style={{
         maxWidth: '76%',
-        backgroundColor: isUser ? '#443A36' : '#362E2B',
+        backgroundColor: isUser ? '#E88B66' : '#FFFFFF',
         borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-        padding: '12px 16px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        padding: '14px 16px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.07)',
+        color: isUser ? '#FFFFFF' : '#1A1614',
+        border: isUser ? 'none' : '1px solid #E8E2DE',
       }}>
         {streaming && msg.content === '' ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Spinner size={16} />
-            <span style={{ color: '#A89E9A', fontSize: '0.82rem' }}>NIO rédige…</span>
+            <span style={{ color: '#8A7D78', fontSize: '0.82rem' }}>NIO rédige…</span>
           </div>
         ) : (
           <MarkdownRenderer content={msg.content} />

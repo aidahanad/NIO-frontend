@@ -11,57 +11,36 @@ export async function checkHealth() {
 export async function fetchModels() {
   const res = await fetch(`${BASE_URL}/models`)
   if (!res.ok) throw new Error('Could not fetch models')
-  return res.json() // { models: [...] }
+  return res.json()
 }
 
-// ─── Conversations ─────────────────────────────────────────────────────────
+// ─── Local Conversations ───────────────────────────────────────────────────
+// Backend does not persist conversations yet.
 export async function createConversation() {
-  const res = await fetch(`${BASE_URL}/conversations`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
-  })
-  if (!res.ok) throw new Error('Could not create conversation')
-  return res.json()
+  return { conversation_id: `local_${Date.now()}` }
 }
 
 export async function listConversations() {
-  const res = await fetch(`${BASE_URL}/conversations`)
-  if (!res.ok) throw new Error('Could not list conversations')
-  return res.json()
+  return []
 }
 
 export async function getConversation(id) {
-  const res = await fetch(`${BASE_URL}/conversations/${id}`)
-  if (!res.ok) throw new Error('Conversation not found')
-  return res.json()
+  return { conversation_id: id, messages: [] }
 }
 
 export async function deleteConversation(id) {
-  const res = await fetch(`${BASE_URL}/conversations/${id}`, {
-    method: 'DELETE',
-  })
-  if (!res.ok) throw new Error('Could not delete conversation')
-  return res.json()
+  return { message: 'Conversation deleted locally', conversation_id: id }
 }
 
-// ─── CHAT (🔥 FIXED: model is ALWAYS explicit now) ─────────────────────────
-export async function sendChat(
-  conversationId,
-  question,
-  docIds = [],
-  llm
-) {
+// ─── Chat ──────────────────────────────────────────────────────────────────
+export async function sendChat(conversationId, question, docIds = [], llm) {
   const body = {
-    conversation_id: conversationId,
     question,
-    llm, // 🔥 ALWAYS sent explicitly
+    llm,
   }
 
-  // only include docs if needed
-  if (Array.isArray(docIds) && docIds.length > 0) {
-    body.doc_ids = docIds
-  }
+  if (conversationId) body.conversation_id = conversationId
+  if (Array.isArray(docIds) && docIds.length > 0) body.doc_ids = docIds
 
   const res = await fetch(`${BASE_URL}/chat`, {
     method: 'POST',
@@ -71,32 +50,48 @@ export async function sendChat(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || `Chat error ${res.status}`)
+    throw new Error(
+      typeof err.detail === 'string'
+        ? err.detail
+        : JSON.stringify(err.detail || err, null, 2)
+    )
   }
 
   return res.json()
 }
 
-// ─── STUDY ─────────────────────────────────────────────────────────────────
-export async function runStudy(conversationId, topic) {
+// ─── Study ─────────────────────────────────────────────────────────────────
+export async function runStudy(docId, question, llm) {
+  const body = {
+    topic: question,
+    llm,
+    doc_ids: docId ? [docId] : [],
+  }
+
+  console.log('SENDING STUDY BODY:', body)
+
   const res = await fetch(`${BASE_URL}/study`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      conversation_id: conversationId,
-      topic,
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || `Study error ${res.status}`)
+    console.error('Study error:', err)
+
+    throw new Error(
+      typeof err.detail === 'string'
+        ? err.detail
+        : JSON.stringify(err.detail || err, null, 2)
+    )
   }
 
   return res.json()
 }
 
-// ─── DOCUMENTS ─────────────────────────────────────────────────────────────
+
+// ─── Documents ─────────────────────────────────────────────────────────────
 export async function uploadDocument(file) {
   const form = new FormData()
   form.append('file', file)
@@ -108,7 +103,11 @@ export async function uploadDocument(file) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || `Upload error ${res.status}`)
+    throw new Error(
+      typeof err.detail === 'string'
+        ? err.detail
+        : JSON.stringify(err.detail || err, null, 2)
+    )
   }
 
   return res.json()
