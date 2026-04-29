@@ -30,18 +30,6 @@ export default function FileUploadZone({ label, file, onFile, onRemove }) {
   return (
     <div>
       {/* Label row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#1A1614' }}>
-          {label}
-        </span>
-        <span style={{
-          fontSize: '0.72rem', color: '#8A7D78',
-          backgroundColor: '#F0EDE9',
-          padding: '1px 8px', borderRadius: 99,
-        }}>
-          Facultatif
-        </span>
-      </div>
 
       <AnimatePresence mode="wait">
         {file ? (
